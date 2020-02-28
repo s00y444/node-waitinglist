@@ -3,6 +3,7 @@ const app     = express()
 const server  = require('http').createServer(app)
 const io      = require('socket.io').listen(server)
 const redis   = require('redis')
+
 const { getData, deleteValue,setData } = require('./handlerRedis.js')
 
 let redisClient = redis.createClient()
@@ -16,9 +17,10 @@ app.get('/ok' ,(req,res) => {
 })
 
 app.get('/debug',function(req,res) {
+
 })
 
-const checkCurrentConcurrent = async (redisKey,concurrent) => {
+const checkCurrentConcurrent = async ({redisKey,concurrent}) => {
     let data = await getData(redisKey);
     let currentConcurrent = data == null ? 0 : Object.keys(data).length
     if(currentConcurrent < concurrent) {
@@ -27,15 +29,32 @@ const checkCurrentConcurrent = async (redisKey,concurrent) => {
     return false
 }
 
-const getTotalAvailibleCurrentConcurrent = async (redisKey,concurrent) => {
-  let data = await getData(redisKey);
+const getTotalAvailibleCurrentConcurrent =  ({redisKey,concurrent}) => {
+  let data =  getData(redisKey);
   let currentConcurrent = data == null ? 0 : Object.keys(data).length
 
   return concurrent - currentConcurrent
 }
 
-const addQueueToGrantAccess = ({redisKey,data,concurrent}) => {
+const manipulateKeys = (string) => {
+  let newString = string.split('waitinglist:granted').join('waitinglist:queue')
+  return newString
+}
+
+const addQueueToGrantAccess = async ({redisKey, key, concurrent}) => {
    if(checkCurrentConcurrent(redisKey,concurrent)) {
+
+       let total   = await getTotalAvailibleCurrentConcurrent(redisKey,concurrent)
+       let granted = await getData(redisKey)
+       let queue   = await getData(manipulateKeys(redisKey))
+
+       let keys = Object.keys(queue)
+
+       for(let i =0; i<total; i++) {
+          granted[keys[i]] = queue[keys[i]]
+       }
+
+       return granted;
 
    }
 }
@@ -51,17 +70,13 @@ io.sockets.on(`connection`,socket => {
       console.log(`socket disconnect ${connections.length}`)
   })
 
-
-  socket.on('checkGrantedIsAvailible',data => {
-    console.log('granted sedang di jalankan');
-    socket.emit('addGranted',data)
-  })
-
   socket.on('deleteGrantAccess', async (data) => {
-    const { redisKey, key, concurrent } = data
-    await deleteValue(redisKey,key)
-    // await addQueueToGrantAccess(data);
-    socket.emit('onDeleteGranteAccess', data)
+    await deleteValue(data)
+    // let grantAccess = await addQueueToGrantAccess(data);
+    let asd = getData(data)
+    console.log('ini type datanya',typeof asd)
+    socket.emit('onDeleteGrantAccess', data)
+    // socket.emit('newGrantAccess',{ redisKey, data : grantAccess  })
   })
 })
 
