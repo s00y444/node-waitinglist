@@ -14,7 +14,7 @@ class RedisClient {
   }
 
   static deleteValue ({redisKey,key}) {
-    return new Promise((resolve,reject) => {
+    return new Promise((resolve,reject) => {  
       redisClient.hdel(redisKey,key,(err,data) => {
         if(err) reject(err)
         resolve(data)

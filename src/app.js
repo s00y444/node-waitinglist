@@ -19,15 +19,22 @@ const manipulateKeys = (redisKey) => {
 
 const checkCurrentAvailible = async ({redisKey,concurrent}) => {
 
-  let keyQueue = manipulateKeys(redisKey)
-
   let granted = await RedisClient.getAll(redisKey)
-  let queue   = await RedisClient.getAll(keyQueue)
 
-  let totalGranted = Object.keys(granted).length
+  let totalGranted = granted == null || undefined ? 0 : Object.keys(granted).length
 
   // console.log(totalGranted)
   return concurrent - totalGranted
+}
+
+const generateTimeExpire = (minute) => { 
+  let date = new Date()
+  let parsedMinute = parseInt(minute)
+  date.setMinutes(date.getMinutes() + parsedMinute)
+  let m = (date.getMonth() + 1).toString().padStart(2, "0");
+  let d = date.getDate().toString().padStart(2, "0");
+  let formatedDate = `${date.getFullYear()}-${m}-${d} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+  return formatedDate
 }
 
 const checkGrantedIsReady = async ({redisKey,concurrent}) => {
@@ -42,47 +49,48 @@ const checkGrantedIsReady = async ({redisKey,concurrent}) => {
   }
 }
 
-const addToGrantAccess = async ({redisKey,concurrent}) => {
-  let keyQueue = manipulateKeys(redisKey)
+const addToGrantAccess = async ({redisKey,concurrent,minute}) => {
+  let keyQueue = await manipulateKeys(redisKey)
   let granted = await RedisClient.getAll(redisKey)
   let queue   = await RedisClient.getAll(keyQueue)
 
+  let avoidNullGranted = granted == null || undefined ? {} : granted
+
   let keys = queue !== null ? Object.keys(queue) : {}
 
-  let availible = await  checkCurrentAvailible({redisKey,concurrent})
-
+  let availible = await checkCurrentAvailible({redisKey,concurrent})
   if(queue !== null) {
     for(let i = 0; i < availible; i++) {
       if(keys[i] !== undefined) {
-        granted[keys[i]] = queued[keys[i]]
+        avoidNullGranted[keys[i]] = await generateTimeExpire(minute)
+        await RedisClient.deleteValue({redisKey: keyQueue,key:keys[i]})
       }
     }
-  }
 
-  let newGranted = await RedisClient.set(redisKey,granted)
-  return newGranted
+    let newGranted = await RedisClient.set(redisKey,avoidNullGranted)
+    return newGranted
+  }
 }
 
 io.sockets.on(`connection`,socket => {
   connections.push(socket)
-
+  
   console.log(`socket connected : ${connections.length}`)
 
   socket.on('disconnect',(data) => {
     connections.splice(connections.indexOf(socket),1)
     console.log(`socket disconnect ${connections.length}`)
-  })
+  })  
 
   socket.on('deleteGrantAccess', async data => {
     await RedisClient.deleteValue(data)
-    let newGranted = addToGrantAccess(data)
-
-    socket.emit('onDeleteGrantAccess',{ redisKey: data.redisKey, granted : newGranted })
-
+    let newGranted = await addToGrantAccess(data)
+    
+    socket.emit('onDeleteGrantAccess',{ ...data })
+    socket.broadcast.emit('onDeleteGrantAccess',{ redisKey : manipulateKeys(data.redisKey), granted : newGranted })
   })
 })
 
 server.listen(PORT , async () => {
-
-  console.log(`Server running port ${PORT}`)
+    console.log(`Server running port ${PORT}`)
 })
