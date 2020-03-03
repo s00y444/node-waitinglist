@@ -58,6 +58,10 @@ class WaitlistService  {
       async deleteGranted ({redisKey,key}) {
           return this.cache.destroy({redisKey,key})
       }
+
+      async getQueue ({redisKey}) {
+        return this.cache.findAll(redisKey) 
+      }
 }
 
 module.exports = WaitlistService

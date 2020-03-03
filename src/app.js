@@ -32,13 +32,12 @@ io.sockets.on(`connection`,socket => {
     connections.splice(connections.indexOf(socket),1)
     console.log(`socket disconnect ${connections.length}`)
   })  
-
+  
   socket.on('deleteGrantAccess', async data => {
     await Waitlist.deleteGranted(data)
     let newGranted = await Waitlist.addToGrantAccess(data)
-    
     socket.emit('onDeleteGrantAccess',{ ...data })
-    socket.broadcast.emit('onDeleteGrantAccess',{ redisKey : ManipulateString.changeText({text: data.redisKey,from: 'waitinglist:granted',to : 'waitinglist:queue'}), granted : newGranted })
+    socket.broadcast.emit('onDeleteGrantAccess',{ redisKey : ManipulateString.changeText({text: data.redisKey,from: 'waitinglist:granted',to : 'waitinglist:queue'}), granted : newGranted})
   })
 })
 
