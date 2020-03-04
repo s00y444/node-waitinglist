@@ -62,6 +62,21 @@ class WaitlistService  {
       async getQueue ({redisKey}) {
         return this.cache.findAll(redisKey) 
       }
+
+      async checkGrantAccessIsExpired({redisKey}) {
+        let check = await this.cache.findAll(redisKey)
+        let timeExp = Object.values(check)
+        let keys = Object.keys(check)
+        let dateNow = Date.now()
+        for (let i = 0; i < timeExp.length; i++) {
+          let dateExp = new Date(timeExp[i]).getTime()
+          if(redisKey !== null || redisKey !== undefined) {
+            if(dateNow >= dateExp) {
+              let deleteAccess = await this.cache.destroy({redisKey, key: keys[i]})
+            }
+          }
+        }
+      }
 }
 
 module.exports = WaitlistService

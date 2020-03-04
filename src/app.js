@@ -35,6 +35,7 @@ io.sockets.on(`connection`,socket => {
   
   socket.on('deleteGrantAccess', async data => {
     await Waitlist.deleteGranted(data)
+    await Waitlist.checkGrantAccessIsExpired(data)
     let newGranted = await Waitlist.addToGrantAccess(data)
     socket.emit('onDeleteGrantAccess',{ ...data })
     socket.broadcast.emit('onDeleteGrantAccess',{ redisKey : ManipulateString.changeText({text: data.redisKey,from: 'waitinglist:granted',to : 'waitinglist:queue'}), granted : newGranted})
