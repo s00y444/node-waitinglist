@@ -65,8 +65,8 @@ class WaitlistService  {
 
       async checkGrantAccessIsExpired({redisKey}) {
         let check = await this.cache.findAll(redisKey)
-        let timeExp = Object.values(check)
-        let keys = Object.keys(check)
+        let timeExp = check !== null || check !== undefined ? Object.values(check) : []
+        let keys = check !== null || check !== undefined ? Object.keys(check) : []
         let dateNow = Date.now()
         for (let i = 0; i < timeExp.length; i++) {
           let dateExp = new Date(timeExp[i]).getTime()
