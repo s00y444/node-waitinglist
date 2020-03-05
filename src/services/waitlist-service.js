@@ -32,7 +32,7 @@ class WaitlistService  {
      async addToGrantAccess ({redisKey,concurrent,minute}) {
         let isReady = await this.checkGrantedIsReady({redisKey,concurrent})
         if(isReady) {
-          let keyQueue = await this.helpers.string.changeText({text: redisKey,from : 'waitinglist:granted',to : 'waitinglist:queue'})
+          let keyQueue = await this.helpers.string.changeText({text: redisKey,to : 'waitinglist:queue'})
           let granted = await this.cache.findAll(redisKey)
           let queue   = await this.cache.findAll(keyQueue)
       
@@ -77,6 +77,12 @@ class WaitlistService  {
           }
         }
       }
+
+     async checkPosition({redisKey,key}){
+      let check = await this.cache.findAll(redisKey)
+      let listQueue = check == null ? [] : Object.keys(check)
+      return listQueue
+     }
 }
 
 module.exports = WaitlistService

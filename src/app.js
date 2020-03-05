@@ -35,9 +35,18 @@ io.sockets.on(`connection`,socket => {
   socket.on('deleteGrantAccess', async data => {
     await Waitlist.deleteGranted(data)
     // await Waitlist.checkGrantAccessIsExpired(data)
+    let manipulateKeys = ManipulateString.changeText({text: data.redisKey,to : 'waitinglist:queue'});
     let newGranted = await Waitlist.addToGrantAccess(data)
     socket.emit('onDeleteGrantAccess',{ ...data })
-    socket.broadcast.emit('onDeleteGrantAccess',{ redisKey : ManipulateString.changeText({text: data.redisKey,from: 'waitinglist:granted',to : 'waitinglist:queue'}), granted : newGranted})
+    socket.emit('checkPosition',{redisKey: manipulateKeys})
+    socket.broadcast.emit('checkPosition',{redisKey: manipulateKeys})
+    socket.broadcast.emit('onDeleteGrantAccess',{ redisKey : manipulateKeys, granted : newGranted})
+  })
+
+  socket.on('checkPosition', async data => {
+    let position = await Waitlist.checkPosition(data)
+    socket.emit('onCheckPosition',position)
+    socket.broadcast.emit('onCheckPosition',position)
   })
 })
 

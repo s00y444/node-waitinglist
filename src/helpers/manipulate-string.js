@@ -1,7 +1,7 @@
 class ManipulateString {    
-    static changeText({text, from, to}) {
+    static changeText({text,to}) {
         let copiedString = text
-        let newString = copiedString.split(from).join(to)
+        let newString = copiedString.replace(copiedString,to)
         return newString
     }
 }
