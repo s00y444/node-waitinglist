@@ -59,8 +59,8 @@ class WaitlistService  {
           return this.cache.destroy({redisKey,key})
       }
 
-      async getQueue ({redisKey}) {
-        return this.cache.findAll(redisKey) 
+      async getQueue () {
+        return this.cache.findAll('waitinglist:queue') 
       }
 
       async checkGrantAccessIsExpired({redisKey}) {
@@ -82,6 +82,21 @@ class WaitlistService  {
       let check = await this.cache.findAll(redisKey)
       let listQueue = check == null ? [] : Object.keys(check)
       return listQueue
+     }
+
+     async delQueue(key){
+       if(key !== undefined && key !== null) {
+         return this.cache.destroy({redisKey:'waitinglist:queue',key})
+       }
+     }
+
+     async addQueue(data) {
+       return this.cache.createOne('waitinglist:queue',{key:data, value: 'onqueue'});
+     }
+
+     async checkIsExistInQueue(key) {
+      let data = await this.cache.findByKey('waitinglist:queue',key);
+      return data
      }
 }
 
