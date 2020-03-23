@@ -30,6 +30,15 @@ class Redis {
       })
     })
   }
+  
+  static createOne (redisKey,{key,value}) {
+    return new Promise((resolve, reject) => {
+      redisClient.hset(redisKey,key,value,(err,res)=>{
+        if(err) reject(err)
+        resolve(res)
+      })
+    })
+  }
 
   static findByKey (redisKey,key)  {
     return new Promise((resolve,reject) => {
