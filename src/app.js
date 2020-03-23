@@ -21,15 +21,39 @@ const Waitlist = new WaitlistService({
 })
 
 const connections = []
+const users = {}
+
+
+io.use(async function(client,next){
+  let query = await client.handshake.query
+  let {key,redisKey} = query
+
+  if(redisKey == 'waitinglist:queue') {
+    let checkIsExist = await Waitlist.checkIsExistInQueue('asd')
+    if(checkIsExist == null) {
+      await Waitlist.addQueue(key)
+    }
+  }
+ 
+  next()
+
+})
 
 
 io.sockets.on(`connection`,socket => {
   connections.push(socket)
   console.log(`socket connected : ${connections.length}`)
 
-  socket.on('disconnect',(data) => {
+  socket.on('disconnect',async (data) => {
     connections.splice(connections.indexOf(socket),1)
     console.log(`socket disconnect ${connections.length}`)
+
+    let key = users[socket.id]
+    if(key !== null || key !== undefined) {
+      await Waitlist.delQueue(key)
+      delete users[socket.id]
+    }
+
   })  
   
   socket.on('deleteGrantAccess', async data => {
@@ -45,6 +69,12 @@ io.sockets.on(`connection`,socket => {
 
   socket.on('checkPosition', async data => {
     let position = await Waitlist.checkPosition(data)
+    let key = data.key
+
+    if(key !== null || key !== undefined) {
+      users[socket.id] = key
+    }
+
     socket.emit('onCheckPosition',position)
     socket.broadcast.emit('onCheckPosition',position)
   })
