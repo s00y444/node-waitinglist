@@ -29,7 +29,7 @@ io.use(async function(client,next){
   let {key,redisKey} = query
 
   if(redisKey == 'waitinglist:queue') {
-    let checkIsExist = await Waitlist.checkIsExistInQueue('asd')
+    let checkIsExist = await Waitlist.checkIsExistInQueue(key)
     if(checkIsExist == null) {
       await Waitlist.addQueue(key)
     }
@@ -51,6 +51,7 @@ io.sockets.on(`connection`,socket => {
     let key = users[socket.id]
     if(key !== null || key !== undefined) {
       await Waitlist.delQueue(key)
+      socket.broadcast.emit('leave',{ redisKey: 'waitinglist:queue' })
       delete users[socket.id]
     }
 
@@ -63,7 +64,7 @@ io.sockets.on(`connection`,socket => {
     let newGranted = await Waitlist.addToGrantAccess(data)
     socket.emit('onDeleteGrantAccess',{ ...data })
     socket.emit('checkPosition',{redisKey: manipulateKeys})
-    socket.broadcast.emit('checkPosition',{redisKey: manipulateKeys})
+    // socket.broadcast.emit('checkPosition',{redisKey: manipulateKeys})
     socket.broadcast.emit('onDeleteGrantAccess',{ redisKey : manipulateKeys, granted : newGranted})
   })
 
@@ -78,6 +79,7 @@ io.sockets.on(`connection`,socket => {
     socket.emit('onCheckPosition',position)
     socket.broadcast.emit('onCheckPosition',position)
   })
+
 })
 
 server.listen(PORT , async () => {
