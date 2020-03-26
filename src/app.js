@@ -88,6 +88,6 @@ io.sockets.on(`connection`,socket => {
 
 })
 
-server.listen(PORT , async () => {
+server.listen(PORT ,'0.0.0.0', async () => {
     console.log(`Server running port ${PORT}`)
 })
