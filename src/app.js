@@ -10,7 +10,7 @@ const ManipulateString = require('./helpers/manipulate-string')
 const dateTime = require('./helpers/date-time')
 const WaitlistService = require('./services/waitlist-service')
 
-const PORT    = process.env.PORT || 9000
+const PORT    = process.env.PORT || 6000
 
 app.get('/tes',(req,res,next) => {
   res.send({
