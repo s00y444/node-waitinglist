@@ -12,6 +12,12 @@ const WaitlistService = require('./services/waitlist-service')
 
 const PORT    = process.env.PORT || 9000
 
+app.get('/tes',(req,res,next) => {
+  res.send({
+    ok : 'works'
+  })
+})
+
 const Waitlist = new WaitlistService({
   cache : Redis,
   helpers : {
