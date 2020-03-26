@@ -1,51 +1,31 @@
 <?php
-/* An easy way to keep in track of external processes.
-* Ever wanted to execute a process in php, but you still wanted to have somewhat controll of the process ? Well.. This is a way of doing it.
-* @compability: Linux only. (Windows does not work).
-* @author: Peec
-*/
-class Process{
-    private $pid;
-    private $command;
-
-    public function __construct($cl=false){
-        if ($cl != false){
-            $this->command = $cl;
-            $this->runCom();
-        }
+//Choose JS file to run
+$file = './src/app.js';
+//Spawn node server in the background and return its pid
+$pid = exec('PORT=9000 node/bin/node ' . $file . ' >/dev/null 2>&1 & echo $!');
+//Wait for node to start up
+usleep(500000);
+//Connect to node server using cURL
+$curl = curl_init('http://127.0.0.1:9000/');
+curl_setopt($curl, CURLOPT_HEADER, 1);
+curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+//Get the full response
+$resp = curl_exec($curl);
+if($resp === false) {
+    //If couldn't connect, try increasing usleep
+    echo 'Error: ' . curl_error($curl);
+} else {
+    //Split response headers and body
+    list($head, $body) = explode("\r\n\r\n", $resp, 2);
+    $headarr = explode("\n", $head);
+    //Print headers
+    foreach($headarr as $headval) {
+        header($headval);
     }
-    private function runCom(){
-        $command = 'nohup '.$this->command.' > /dev/null 2>&1 & echo $!';
-        exec($command ,$op);
-        $this->pid = (int)$op[0];
-    }
-
-    public function setPid($pid){
-        $this->pid = $pid;
-    }
-
-    public function getPid(){
-        return $this->pid;
-    }
-
-    public function status(){
-        $command = 'ps -p '.$this->pid;
-        exec($command,$op);
-        if (!isset($op[1]))return false;
-        else return true;
-    }
-
-    public function start(){
-        if ($this->command != '')$this->runCom();
-        else return true;
-    }
-
-    public function stop(){
-        $command = 'kill '.$this->pid;
-        exec($command);
-        if ($this->status() == false)return true;
-        else return false;
-    }
+    //Print body
+    echo $body;
 }
-new Process('node ./src/app.js')
-?>
+//Close connection
+curl_close($curl);
+//Close node server
+exec('kill ' . $pid);
